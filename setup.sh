@@ -239,19 +239,24 @@ arch-chroot /mnt /bin/bash <<EOF
   # Install Xorg and KDE Plasma with display management
   pacman -S --noconfirm xorg xorg-xinit sddm plasma-desktop plasma-nm plasma-pa plasma-systemmonitor systemsettings kscreen gnome-terminal nano gedit dolphin kcalc gwenview neofetch htop docker
 
-  # Configure SDDM to prefer X11
+  # Remove Wayland-specific packages
+  pacman -Rns --noconfirm plasma-wayland-session wayland libwayland-server wayland-protocols || true
+
+  # Configure SDDM to force X11
   mkdir -p /etc/sddm.conf.d
   cat << 'SDDM' > /etc/sddm.conf.d/00-x11.conf
 [General]
 DisplayServer=x11
+GreeterEnvironment=QT_QPA_PLATFORM=xcb
 
 [Autologin]
 User=main
 Session=plasma.desktop
 SDDM
 
-  # Ensure X11 session file exists
+  # Ensure only X11 session file exists
   mkdir -p /usr/share/xsessions
+  rm -f /usr/share/wayland-sessions/* 2>/dev/null || true
   cat << 'PLASMA_X11' > /usr/share/xsessions/plasma.desktop
 [Desktop Entry]
 Name=Plasma (X11)
