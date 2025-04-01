@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Hardcode the branch ("test" for test branch, "master" for master branch)
-BRANCH="master"
+BRANCH="test"
 
 # Set base URL based on selected branch
 if [ "$BRANCH" = "test" ]; then
@@ -235,18 +235,23 @@ arch-chroot /mnt /bin/bash <<EOF
     fi
   fi
 
-  # Install Xorg and KDE Plasma desktop environment
-  pacman -S --noconfirm xorg sddm plasma konsole nano gedit dolphin kcalc gwenview neofetch htop docker
-  pacman -R --noconfirm plasma-welcome discover
-  systemctl enable sddm
+  # Install Xorg and KDE Plasma desktop environment (X11 only)
+  pacman -S --noconfirm xorg xorg-xinit sddm plasma-desktop plasma-nm plasma-pa konsole nano gedit dolphin kcalc gwenview neofetch htop docker
+  pacman -R --noconfirm plasma-wayland-session plasma-welcome discover
 
-  # Configure SDDM for autologin
+  # Configure SDDM to use X11 only
   mkdir -p /etc/sddm.conf.d
   cat << 'SDDM' > /etc/sddm.conf.d/autologin.conf
 [Autologin]
 User=main
 Session=plasma.desktop
+
+[General]
+DisplayServer=x11
 SDDM
+
+  # Enable SDDM service
+  systemctl enable sddm
 
   # Set console keyboard layout
   echo "KEYMAP=us" > /etc/vconsole.conf
