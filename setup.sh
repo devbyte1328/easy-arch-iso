@@ -222,8 +222,9 @@ arch-chroot /mnt /bin/bash <<EOF
     fi
   fi
 
-  # Install KDE Plasma desktop environment (without forcing X11)
-  pacman -S --noconfirm sddm plasma-desktop plasma-nm plasma-pa gnome-terminal nano gedit dolphin kcalc gwenview neofetch htop docker
+  # Install Xorg and KDE Plasma desktop environment
+  pacman -S --noconfirm xorg sddm plasma konsole nano gedit dolphin kcalc gwenview neofetch htop docker
+  pacman -R --noconfirm plasma-welcome discover
 
   # Enable SDDM service
   systemctl enable sddm
