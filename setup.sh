@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Hardcode the branch ("test" for test branch, "master" for master branch)
-BRANCH="master"
+BRANCH="test"
 
 # Set base URL based on selected branch
 if [ "$BRANCH" = "test" ]; then
@@ -185,7 +185,7 @@ arch-chroot /mnt /bin/bash <<EOF
     yay -S blender --noconfirm
     yay -S rar --noconfirm
     yay -S kclock --noconfirm
-    yay -S xclip --noncofirm
+    yay -S xclip --noconfirm
   "
 
   # Remove temporary build user and cleanup
@@ -236,24 +236,21 @@ arch-chroot /mnt /bin/bash <<EOF
     fi
   fi
 
-  # Install Xorg and KDE Plasma desktop environment (X11 only)
-  pacman -S --noconfirm xorg xorg-xinit sddm plasma-desktop plasma-nm plasma-pa gnome-terminal nano gedit dolphin kcalc gwenview neofetch htop docker
-  # Explicitly remove Wayland-related packages
-  pacman -Rns --noconfirm plasma-wayland-session wayland libwayland-server wayland-protocols || true
+  # Install Xorg and KDE Plasma with display management
+  pacman -S --noconfirm xorg xorg-xinit sddm plasma-desktop plasma-nm plasma-pa plasma-systemmonitor systemsettings kscreen gnome-terminal nano gedit dolphin kcalc gwenview neofetch htop docker
 
-  # Configure SDDM to use X11 only and ensure autologin
+  # Configure SDDM to prefer X11
   mkdir -p /etc/sddm.conf.d
   cat << 'SDDM' > /etc/sddm.conf.d/00-x11.conf
 [General]
 DisplayServer=x11
-GreeterEnvironment=QT_QPA_PLATFORM=xcb
 
 [Autologin]
 User=main
 Session=plasma.desktop
 SDDM
 
-  # Ensure SDDM session file points to X11
+  # Ensure X11 session file exists
   mkdir -p /usr/share/xsessions
   cat << 'PLASMA_X11' > /usr/share/xsessions/plasma.desktop
 [Desktop Entry]
@@ -265,9 +262,6 @@ DesktopNames=KDE
 X-KDE-PluginInfo-Name=plasma-x11
 X-KDE-PluginInfo-Version=5
 PLASMA_X11
-
-  # Remove any Wayland session files
-  rm -f /usr/share/wayland-sessions/* 2>/dev/null || true
 
   # Enable SDDM service
   systemctl enable sddm
