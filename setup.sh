@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Hardcode the branch ("test" for test branch, "master" for master branch)
-BRANCH="test"
+BRANCH="master"
 
 # Set base URL based on selected branch
 if [ "$BRANCH" = "test" ]; then
@@ -236,7 +236,7 @@ arch-chroot /mnt /bin/bash <<EOF
   fi
 
   # Install Xorg and KDE Plasma desktop environment (X11 only)
-  pacman -S --noconfirm xorg xorg-xinit sddm plasma-desktop plasma-nm plasma-pa konsole nano gedit dolphin kcalc gwenview neofetch htop docker
+  pacman -S --noconfirm xorg xorg-xinit sddm plasma-desktop plasma-nm plasma-pa gnome-terminal nano gedit dolphin kcalc gwenview neofetch htop docker
   # Explicitly remove Wayland-related packages
   pacman -Rns --noconfirm plasma-wayland-session wayland libwayland-server wayland-protocols || true
 
