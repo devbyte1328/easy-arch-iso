@@ -160,9 +160,6 @@ arch-chroot /mnt /bin/bash <<EOF
   # Install essential packages
   pacman -S --needed --noconfirm git base-devel
   pacman -S --noconfirm grub efibootmgr os-prober mtools dosfstools linux-headers networkmanager nm-connection-editor pipewire pipewire-pulse pipewire-alsa pavucontrol dialog
-
-  # Fetch and apply the custom logind.conf
-  curl -o /etc/systemd/logind.conf $BASE_URL/conf/kde/logind.conf
   
   # Create temporary build user for AUR packages
   useradd -m -s /bin/bash builder
@@ -174,17 +171,7 @@ arch-chroot /mnt /bin/bash <<EOF
     git clone https://aur.archlinux.org/yay-bin.git /home/builder/yay-bin
     cd /home/builder/yay-bin
     makepkg -si --noconfirm
-    yay -S brave-bin --noconfirm
-    yay -S gimp --noconfirm
-    yay -S libreoffice-fresh --noconfirm
-    yay -S redot-bin --noconfirm
-    yay -S neovim --noconfirm
-    yay -S virtualbox --noconfirm
-    yay -S obs-studio --noconfirm
-    yay -S openshot --noconfirm
-    yay -S blender --noconfirm
-    yay -S rar --noconfirm
-    yay -S kclock --noconfirm
+    yay -S brave-bin gimp libreoffice redot-bin neovim virtualbox obs-studio openshot blender rar kclock --noconfirm
   "
 
   # Remove temporary build user and cleanup
@@ -235,38 +222,8 @@ arch-chroot /mnt /bin/bash <<EOF
     fi
   fi
 
-  # Install Xorg and KDE Plasma desktop environment (X11 only)
-  pacman -S --noconfirm xorg xorg-xinit sddm plasma-desktop plasma-nm plasma-pa gnome-terminal nano gedit dolphin kcalc gwenview neofetch htop docker
-  # Explicitly remove Wayland-related packages
-  pacman -Rns --noconfirm plasma-wayland-session wayland libwayland-server wayland-protocols || true
-
-  # Configure SDDM to use X11 only and ensure autologin
-  mkdir -p /etc/sddm.conf.d
-  cat << 'SDDM' > /etc/sddm.conf.d/00-x11.conf
-[General]
-DisplayServer=x11
-GreeterEnvironment=QT_QPA_PLATFORM=xcb
-
-[Autologin]
-User=main
-Session=plasma.desktop
-SDDM
-
-  # Ensure SDDM session file points to X11
-  mkdir -p /usr/share/xsessions
-  cat << 'PLASMA_X11' > /usr/share/xsessions/plasma.desktop
-[Desktop Entry]
-Name=Plasma (X11)
-Comment=Plasma desktop with X11
-Exec=/usr/bin/startplasma-x11
-Type=Application
-DesktopNames=KDE
-X-KDE-PluginInfo-Name=plasma-x11
-X-KDE-PluginInfo-Version=5
-PLASMA_X11
-
-  # Remove any Wayland session files
-  rm -f /usr/share/wayland-sessions/* 2>/dev/null || true
+  # Install KDE Plasma desktop environment (without forcing X11)
+  pacman -S --noconfirm sddm plasma-desktop plasma-nm plasma-pa gnome-terminal nano gedit dolphin kcalc gwenview neofetch htop docker
 
   # Enable SDDM service
   systemctl enable sddm
@@ -274,20 +231,6 @@ PLASMA_X11
   # Set console keyboard layout
   echo "KEYMAP=us" > /etc/vconsole.conf
   echo "FONT=lat2-16" >> /etc/vconsole.conf
-
-  # Configure X11 keyboard layout
-  mkdir -p /etc/X11/xorg.conf.d
-  cat << KEYBOARD > /etc/X11/xorg.conf.d/00-keyboard.conf
-Section "InputClass"
-    Identifier "system-keyboard"
-    MatchIsKeyboard "on"
-    Option "XkbLayout" "\$PRIMARY_KB\${SECONDARY_KB:+,}\$SECONDARY_KB"
-    Option "XkbOptions" "\${SECONDARY_KB:+grp:alt_shift_toggle}"
-EndSection
-KEYBOARD
-
-  # Force Qt to use X11 (xcb) backend
-  echo "export QT_QPA_PLATFORM=xcb" >> /etc/environment
 
   # Set up user config files
   mkdir -p /home/main/.config/menus
@@ -301,7 +244,6 @@ KEYBOARD
   curl -o /home/main/.config/kwalletrc $BASE_URL/conf/brave/kwalletrc
   curl -o /etc/pacman.conf $BASE_URL/conf/pacman/pacman.conf
   curl -o /home/main/.config/kwinrc $BASE_URL/conf/kde/kwinrc
-  curl -o /home/main/.config/powerdevilrc $BASE_URL/conf/kde/powerdevilrc
 
   # Install Python and modify wallpapers
   pacman -S --noconfirm python-pip
@@ -359,24 +301,6 @@ fi
 AUTOSTART_BRAVE
   chmod +x /home/main/.config/autostart-scripts/set-brave.sh
   chown main:main /home/main/.config/autostart-scripts/set-brave.sh
-
-  # Create autostart script for kscreenlockerrc configuration
-  cat << 'AUTOSTART_KSCREEN' > /home/main/.config/autostart-scripts/set-kscreenlockerrc.sh
-#!/bin/bash
-FLAG_FILE="/home/main/.kscreenlockerrc_set"
-
-if [ ! -f "\$FLAG_FILE" ]; then
-    cat << 'KSCREEN' > /home/main/.config/kscreenlockerrc
-[Daemon]
-Autolock=false
-Timeout=0
-KSCREEN
-    chown main:main /home/main/.config/kscreenlockerrc
-    touch "\$FLAG_FILE"
-fi
-AUTOSTART_KSCREEN
-  chmod +x /home/main/.config/autostart-scripts/set-kscreenlockerrc.sh
-  chown main:main /home/main/.config/autostart-scripts/set-kscreenlockerrc.sh
 
   # Final system update
   pacman -Syu --noconfirm
