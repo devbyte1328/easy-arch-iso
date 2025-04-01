@@ -235,18 +235,41 @@ arch-chroot /mnt /bin/bash <<EOF
     fi
   fi
 
-  # Install Xorg and KDE Plasma desktop environment
-  pacman -S --noconfirm xorg sddm plasma konsole nano gedit dolphin kcalc gwenview neofetch htop docker
-  pacman -R --noconfirm plasma-welcome discover
-  systemctl enable sddm
+  # Install Xorg and KDE Plasma desktop environment (X11 only)
+  pacman -S --noconfirm xorg xorg-xinit sddm plasma-desktop plasma-nm plasma-pa gnome-terminal nano gedit dolphin kcalc gwenview neofetch htop docker
+  # Explicitly remove Wayland-related packages
+  pacman -Rns --noconfirm plasma-wayland-session wayland libwayland-server wayland-protocols || true
 
-  # Configure SDDM for autologin
+  # Configure SDDM to use X11 only and ensure autologin
   mkdir -p /etc/sddm.conf.d
-  cat << 'SDDM' > /etc/sddm.conf.d/autologin.conf
+  cat << 'SDDM' > /etc/sddm.conf.d/00-x11.conf
+[General]
+DisplayServer=x11
+GreeterEnvironment=QT_QPA_PLATFORM=xcb
+
 [Autologin]
 User=main
 Session=plasma.desktop
 SDDM
+
+  # Ensure SDDM session file points to X11
+  mkdir -p /usr/share/xsessions
+  cat << 'PLASMA_X11' > /usr/share/xsessions/plasma.desktop
+[Desktop Entry]
+Name=Plasma (X11)
+Comment=Plasma desktop with X11
+Exec=/usr/bin/startplasma-x11
+Type=Application
+DesktopNames=KDE
+X-KDE-PluginInfo-Name=plasma-x11
+X-KDE-PluginInfo-Version=5
+PLASMA_X11
+
+  # Remove any Wayland session files
+  rm -f /usr/share/wayland-sessions/* 2>/dev/null || true
+
+  # Enable SDDM service
+  systemctl enable sddm
 
   # Set console keyboard layout
   echo "KEYMAP=us" > /etc/vconsole.conf
@@ -262,6 +285,9 @@ Section "InputClass"
     Option "XkbOptions" "\${SECONDARY_KB:+grp:alt_shift_toggle}"
 EndSection
 KEYBOARD
+
+  # Force Qt to use X11 (xcb) backend
+  echo "export QT_QPA_PLATFORM=xcb" >> /etc/environment
 
   # Set up user config files
   mkdir -p /home/main/.config/menus
@@ -352,6 +378,7 @@ AUTOSTART_KSCREEN
   chmod +x /home/main/.config/autostart-scripts/set-kscreenlockerrc.sh
   chown main:main /home/main/.config/autostart-scripts/set-kscreenlockerrc.sh
 
+  # Final system update
   pacman -Syu --noconfirm
 EOF
 
