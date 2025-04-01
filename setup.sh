@@ -185,6 +185,7 @@ arch-chroot /mnt /bin/bash <<EOF
     yay -S blender --noconfirm
     yay -S rar --noconfirm
     yay -S kclock --noconfirm
+    yay -S xclip --noncofirm
   "
 
   # Remove temporary build user and cleanup
@@ -305,6 +306,7 @@ KEYBOARD
 
   # Install Python and modify wallpapers
   pacman -S --noconfirm python-pip
+  pip3 install tqdm --break-system-packages
   python -m venv /root/temp_env
   /root/temp_env/bin/python -m pip install pillow
   cat << 'PYTHON' > /root/blackout.py
