@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Hardcode the branch ("test" for test branch, "master" for master branch)
-BRANCH="master"
+BRANCH="test"
 
 # Set base URL based on selected branch
 if [ "$BRANCH" = "test" ]; then
@@ -161,9 +161,6 @@ arch-chroot /mnt /bin/bash <<EOF
   pacman -S --needed --noconfirm git base-devel
   pacman -S --noconfirm grub efibootmgr os-prober mtools dosfstools linux-headers networkmanager nm-connection-editor pipewire pipewire-pulse pipewire-alsa pavucontrol dialog
 
-  # Fetch and apply the custom logind.conf
-  curl -o /etc/systemd/logind.conf $BASE_URL/conf/kde/logind.conf
-  
   # Create temporary build user for AUR packages
   useradd -m -s /bin/bash builder
   echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/builder
@@ -265,7 +262,6 @@ KEYBOARD
   curl -o /home/main/.config/kwalletrc $BASE_URL/conf/brave/kwalletrc
   curl -o /etc/pacman.conf $BASE_URL/conf/pacman/pacman.conf
   curl -o /home/main/.config/kwinrc $BASE_URL/conf/kde/kwinrc
-  curl -o /home/main/.config/powerdevilrc $BASE_URL/conf/kde/powerdevilrc
 
   # Install Python and modify wallpapers
   pacman -S --noconfirm python-pip
@@ -323,24 +319,6 @@ fi
 AUTOSTART_BRAVE
   chmod +x /home/main/.config/autostart-scripts/set-brave.sh
   chown main:main /home/main/.config/autostart-scripts/set-brave.sh
-
-  # Create autostart script for kscreenlockerrc configuration
-  cat << 'AUTOSTART_KSCREEN' > /home/main/.config/autostart-scripts/set-kscreenlockerrc.sh
-#!/bin/bash
-FLAG_FILE="/home/main/.kscreenlockerrc_set"
-
-if [ ! -f "\$FLAG_FILE" ]; then
-    cat << 'KSCREEN' > /home/main/.config/kscreenlockerrc
-[Daemon]
-Autolock=false
-Timeout=0
-KSCREEN
-    chown main:main /home/main/.config/kscreenlockerrc
-    touch "\$FLAG_FILE"
-fi
-AUTOSTART_KSCREEN
-  chmod +x /home/main/.config/autostart-scripts/set-kscreenlockerrc.sh
-  chown main:main /home/main/.config/autostart-scripts/set-kscreenlockerrc.sh
 
   # Create autostart script for installing python-pip and tqdm
   cat << 'AUTOSTART_TQDM' > /home/main/.config/autostart-scripts/set-tqdm.sh
